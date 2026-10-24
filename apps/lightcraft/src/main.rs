@@ -29,6 +29,7 @@ mod appearance;
 #[cfg(target_os = "linux")]
 mod colord;
 mod control_server;
+mod tm_kanal;
 mod dialog_filter;
 mod editors;
 mod hdr_display;
