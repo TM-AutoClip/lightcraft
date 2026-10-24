@@ -836,6 +836,7 @@ pub fn menu_bar(app: &LightcraftApp) -> Vec<(String, Vec<MenuNode>)> {
         }
         bar.push((title.to_string(), tidy(items)));
     }
+    crate::tm::menu_ogeleri(&mut bar);
     bar
 }
 

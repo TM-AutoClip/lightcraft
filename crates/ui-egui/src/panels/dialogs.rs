@@ -1081,6 +1081,7 @@ pub fn show(app: &mut LightcraftApp, ctx: &egui::Context) {
                             crate::widgets::named(ui.add(egui::TextEdit::singleline(preset_name).hint_text(crate::i18n::tr("Preset name")).desired_width(ui.available_width())), crate::i18n::tr("Preset name"));
                         });
                     });
+                    crate::tm::disa_aktar_alani(app, ui, || export_dialog_params(opts, *full_size, resize, *limit_kb));
                 }
                 Dialog::Merge { opts } => crate::merge::body(app, ui, opts),
                 Dialog::Import { opts } => crate::import::body(app, ui, opts),
