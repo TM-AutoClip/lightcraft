@@ -1095,6 +1095,7 @@ fn export_body(app: &mut LightcraftApp, ui: &mut egui::Ui, t: &Tokens, dlg: &mut
     export_naming_rows(ui, opts);
     export_destination_rows(app, ui, t, opts, dir);
     export_save_preset_row(app, ui, opts, *full_size, resize, *limit_kb, preset_name);
+    crate::tm::disa_aktar_alani(app, ui, || export_dialog_params(opts, *full_size, resize, *limit_kb));
 }
 
 /// Export dialog: load a built-in or saved set of options.
