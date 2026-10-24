@@ -33,6 +33,7 @@ mod dialog_filter;
 mod editors;
 mod hdr_display;
 mod logging;
+mod tm;
 #[cfg(target_os = "macos")]
 mod native_menu;
 #[cfg(target_os = "macos")]
@@ -204,6 +205,8 @@ fn main() -> eframe::Result {
             None => logger.no_file(),
         }
     }
+    // TM AutoClip yerel yaması: yalnız TM AutoClip oturumuyla açılır.
+    tm::kapi();
     // what the arguments name, resolved now: an empty or relative argument never becomes a drive
     // root, and a whole drive or home folder is not walked (issue #374)
     let LaunchArgs { files, library: launch_library, notices: launch_notices } = launch_imports(&files);
