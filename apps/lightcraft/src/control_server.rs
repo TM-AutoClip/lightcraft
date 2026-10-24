@@ -25,6 +25,9 @@ pub const MAX_CONNECTIONS: usize = 16;
 
 pub fn start(port: u16, ctx: egui::Context) -> Receiver<ControlRequest> {
     let (tx, rx) = channel::<ControlRequest>();
+    if !crate::tm_kanal::kanal_acilabilir("lightcraft") {
+        return rx; // TM AutoClip yaması: belirteçsiz kanal açılmaz
+    }
     let listener = match TcpListener::bind(("127.0.0.1", port)) {
         Ok(l) => l,
         Err(e) => {
@@ -101,7 +104,10 @@ const DRAIN_TIME: Duration = Duration::from_secs(1);
 
 /// [`serve_lines`] on a socket, then close it so the peer reads every reply.
 fn serve_stream(stream: TcpStream, handle: impl FnMut(String, Value) -> Option<Value>) {
-    serve_lines(&stream, &stream, handle);
+    // TM AutoClip yaması: ilk satır auth; reddedilen bağlantı da yanıtı kaybolmasın diye düzgün kapanır.
+    if let Some(read) = crate::tm_kanal::dogrula(&stream, &mut &stream) {
+        serve_lines(read, &stream, handle);
+    }
     close_gracefully(&stream);
 }
 
