@@ -20,7 +20,7 @@ pub enum RatingOp {
 #[serde(default, rename_all = "camelCase")]
 pub struct Filter {
     /// Free-text search: every token must match filename, title, caption, keywords, camera, lens,
-    /// location or format. Tokens like `rating:3`, `flag:pick`, `iso:>800`, `camera:x2` are fielded.
+    /// location or format. Tokens like `rating:3`, `rating:>=3`, `flag:pick`, `iso:>800`, `camera:x2` are fielded.
     pub text: String,
     pub rating: u8,
     pub rating_op: RatingOp,
@@ -29,6 +29,10 @@ pub struct Filter {
     /// Only these photos (Find Similar results…); empty = no constraint.
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub only: Vec<PhotoId>,
+    /// Show nothing: an explicit empty result (Find Similar with no matches), since an empty
+    /// `only` means "no constraint".
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    pub only_none: bool,
     /// Any of these labels (the filter bar's multi-select); empty = no constraint.
     #[serde(skip_serializing_if = "Vec::is_empty")]
     pub labels: Vec<ColorLabel>,
@@ -175,23 +179,25 @@ fn token_matches(p: &Photo, tok: &str) -> bool {
     // a token that starts with a quote is a phrase, even with a colon in it
     if let Some((field, quoted)) = t.split_once(':').filter(|_| !t.starts_with('"')) {
         let val = unquote(quoted);
-        let num = |s: &str| -> Option<(char, f64)> {
-            let (op, rest) = match s.chars().next()? {
-                c @ ('>' | '<' | '=') => (c, &s[1..]),
-                _ => ('=', s),
-            };
-            rest.parse().ok().map(|v| (op, v))
+        // `>=` / `<=` before `>` / `<`: otherwise `rating:>=3` reads `=3` as the number and matches nothing
+        let num = |s: &str| -> Option<(&str, f64)> {
+            let op = [">=", "<=", ">", "<", "="].into_iter().find(|op| s.starts_with(op)).unwrap_or("");
+            s.get(op.len()..)?.parse().ok().map(|v| (op, v))
         };
         let cmp = |x: f64, s: &str| match num(s) {
-            Some(('>', v)) => x > v,
-            Some(('<', v)) => x < v,
+            Some((">", v)) => x > v,
+            Some(("<", v)) => x < v,
+            Some((">=", v)) => x >= v,
+            Some(("<=", v)) => x <= v,
             Some((_, v)) => (x - v).abs() < 1e-9,
             None => false,
         };
         // Fields stored as `f32` compare at f32 precision: 2.8f32 widened to f64 is not 2.8.
         let cmp32 = |x: f32, s: &str| match num(s) {
-            Some(('>', v)) => x > v as f32,
-            Some(('<', v)) => x < v as f32,
+            Some((">", v)) => x > v as f32,
+            Some(("<", v)) => x < v as f32,
+            Some((">=", v)) => x >= v as f32,
+            Some(("<=", v)) => x <= v as f32,
             Some((_, v)) => x == v as f32,
             None => false,
         };
@@ -236,6 +242,17 @@ fn has_person(p: &Photo, name: &str) -> bool {
 }
 
 impl Filter {
+    /// The labels that `label` and `labels` let through together (they AND), in `labels`' order;
+    /// `None` when neither is set, empty when they exclude each other. The chip and the filter
+    /// bar's buttons show this, so they match what is filtered.
+    pub fn labels_shown(&self) -> Option<Vec<ColorLabel>> {
+        match (self.label, self.labels.is_empty()) {
+            (None, true) => None,
+            (Some(l), true) => Some(vec![l]),
+            (l, false) => Some(self.labels.iter().copied().filter(|x| l.is_none_or(|l| l == *x)).collect()),
+        }
+    }
+
     /// Human-readable summary of the active rules (smart album tooltips, `album.list`).
     pub fn describe(&self) -> String {
         self.describe_in(None)
@@ -372,6 +389,9 @@ impl Filter {
             return false;
         }
         if !self.labels.is_empty() && !p.label.is_some_and(|l| self.labels.contains(&l)) {
+            return false;
+        }
+        if self.only_none {
             return false;
         }
         if !self.only.is_empty() && !prepared.only.as_ref().map_or_else(|| self.only.contains(&p.id), |only| only.contains(&p.id)) {

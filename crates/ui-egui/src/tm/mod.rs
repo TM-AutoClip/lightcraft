@@ -1,5 +1,5 @@
-//! TM AutoClip yerel yaması — LightCraft (11 Eki 2026). Upstream'e dokunuş: `lib.rs` → `pub mod tm;` + her karede
-//! `tm::kare`, `menus.rs` → çalıştırma, `menubar.rs` → marka linkleri, `panels/dialogs.rs` → Dışa Aktar penceresinde alan,
+//! TM AutoClip yerel yaması — LightCraft (11 Eki 2026). Upstream'e dokunuş: `lib.rs` → `pub mod tm;`, `app/frame.rs` → her karede
+//! `tm::kare`, `menus/run.rs` → çalıştırma, `menus/menubar.rs` → marka linkleri, `dialogs.rs` → Dışa Aktar penceresinde alan,
 //! `apps/lightcraft/src/main.rs` → açılış kapısı.
 //!
 //! - Akış kipinde Dışa Aktar penceresinin sonunda "Dışa aktar ve TM AutoClip'e dön": penceredeki ayarlarla, oturumun
@@ -56,7 +56,7 @@ pub fn disa_aktar_alani(app: &mut LightcraftApp, ui: &mut egui::Ui, ayarlar: imp
     let etiket = o.metin("disaAktarDonus", "Dışa aktar ve TM AutoClip'e dön").to_string();
     let suruyor = BEKLIYOR.load(Ordering::Relaxed);
     let r = ui.add_enabled(!suruyor, egui::Button::new(egui::RichText::new(&etiket).strong()));
-    crate::widgets::register(ui.ctx(), "button:tmDisaAktarVeDon", r.rect);
+    crate::widgets::register(ui, "button:tmDisaAktarVeDon", r.rect);
     if let Some((_, yol)) = &o.cikti {
         ui.label(egui::RichText::new(yol.to_string_lossy()).small().weak());
     }
