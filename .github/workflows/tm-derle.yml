@@ -25,7 +25,7 @@ env:
   # cargo --features değeri (boş: yok). Upstream package.ps1 ile aynı.
   CARGO_FEATURES: "lightcraft/heif,lightcraft-cli/heif"
   # storytold/craft-fonts commit'i (boş: bu program yazı tipi gömmüyor). Upstream release.yml ile aynı.
-  CRAFT_FONTS_REF: "a71c20e30af613287c504f7e685ca8fad77752bc"
+  CRAFT_FONTS_REF: "b076417b5880bd4154bd22f00695b1d28c6bea83"
   TARGET: x86_64-pc-windows-msvc
   CARGO_TERM_COLOR: always
   CARGO_INCREMENTAL: 0
