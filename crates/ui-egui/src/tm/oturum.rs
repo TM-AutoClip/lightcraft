@@ -9,6 +9,10 @@
 //!   şimdi < `sonKullanma`, `kullanildiIsareti` dosyası YOK → işaret dosyası yazılır (tek kullanımlık).
 //! - Ek bağımlılık YOK (Cargo.lock değişmesin): SHA-256 ve ISO-8601 okuma burada, yalnız serde_json kullanılır.
 //!
+//! - Canlı uyumu (3 Kas 2026): yamalı exe canlıda bizim sunucumuzdan iner ve TM AutoClip menüsünden oturumsuz da açılır.
+//!   Oturum ortam değişkeni (`TMAC_OTURUM`) HİÇ yoksa program serbest açılır (bizim öğeler gizli, kontrol kanalı kapalı);
+//!   oturum VERİLDİYSE ve geçersizse (bozuk, süresi geçmiş, başka program, yanlış belirteç, kullanılmış) ret: [`kapi_karari`].
+//!
 //! Bu bir caydırıcıdır, DRM değil: resmî imzalı sürüm her zaman ayrıca indirilebilir.
 
 use std::path::{Path, PathBuf};
@@ -20,10 +24,10 @@ use serde_json::Value;
 pub const OTURUM_DEGISKENI: &str = "TMAC_OTURUM";
 /// Belirteç (ortam değişkeni; komut satırında değil).
 pub const BELIRTEC_DEGISKENI: &str = "TMAC_BELIRTEC";
-/// Oturum yokken / geçersizken gösterilen ana ileti.
-pub const RET_ILETISI: &str = "Bu sürüm TM AutoClip üzerinden açılır.";
+/// Verilen oturum geçersizken gösterilen ana ileti (oturum hiç yoksa ileti yok, program serbest açılır).
+pub const RET_ILETISI: &str = "Bu TM AutoClip oturumu geçersiz. Programı TM AutoClip'ten yeniden açın.";
 
-/// Oturum kipi: `duz` = sol menüden serbest açılış (bizim düğmeler gizli), `akis` = bizim akıştan (düğmeler görünür).
+/// Oturum kipi: `duz` = TM AutoClip menüsünden serbest açılış (bizim düğmeler gizli), `akis` = bizim akıştan (düğmeler görünür).
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum Kip {
     Duz,
@@ -78,8 +82,23 @@ pub fn akis() -> Option<&'static Oturum> {
     simdiki().filter(|o| o.akis_mi())
 }
 
+/// Açılış kapısının kararı: oturum ortam değişkeni yoksa serbest açılış (`Ok`, oturum yok); varsa [`ac`] ile denetlenir.
+/// `Err` → çağıran [`RET_ILETISI`] + sebebi gösterip süreci kapatır.
+pub fn kapi_karari(program: &str) -> Result<(), String> {
+    if !oturum_istendi(std::env::var_os(OTURUM_DEGISKENI).as_deref()) {
+        log::info!("TM AutoClip oturumu yok: serbest açılış ({program})");
+        return Ok(());
+    }
+    ac(program).map(|_| ())
+}
+
+/// Ortamda oturum istendi mi (değişken var ve boş değil). Boş değer "yok" sayılır.
+pub fn oturum_istendi(deger: Option<&std::ffi::OsStr>) -> bool {
+    deger.is_some_and(|v| !v.is_empty())
+}
+
 /// Açılış kapısı: ortamdan oturumu okur, denetler, tek kullanımlık işareti yazar ve oturumu saklar.
-/// `Err` → çağıran "Bu sürüm TM AutoClip üzerinden açılır" deyip süreci kapatır.
+/// `Err` → oturum yok ya da geçersiz (çağıran: [`kapi_karari`]).
 pub fn ac(program: &str) -> Result<&'static Oturum, String> {
     if let Some(o) = simdiki() {
         return Ok(o);
@@ -362,6 +381,13 @@ mod testler {
         assert_eq!(o.metin("gonder", "varsayılan"), "varsayılan");
         assert_eq!(o.linkler.len(), 1, "boş ve http adres gizli");
         assert_eq!(o.cikti.as_ref().unwrap().0, "gorsel");
+    }
+
+    #[test]
+    fn oturumsuz_acilis_serbest() {
+        assert!(!oturum_istendi(None), "değişken yok → serbest açılış");
+        assert!(!oturum_istendi(Some(std::ffi::OsStr::new(""))), "boş değer → serbest açılış");
+        assert!(oturum_istendi(Some(std::ffi::OsStr::new("/is/oturum.json"))), "oturum verildi → denetlenir");
     }
 
     #[test]
