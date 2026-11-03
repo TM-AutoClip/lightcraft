@@ -206,7 +206,7 @@ fn main() -> eframe::Result {
             None => logger.no_file(),
         }
     }
-    // TM AutoClip yerel yaması: yalnız TM AutoClip oturumuyla açılır.
+    // TM AutoClip yerel yaması: verilen TM AutoClip oturumu geçersizse açılmaz (oturumsuz açılış serbest).
     tm::kapi();
     // what the arguments name, resolved now: an empty or relative argument never becomes a drive
     // root, and a whole drive or home folder is not walked (issue #374)
