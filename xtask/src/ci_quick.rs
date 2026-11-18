@@ -4,7 +4,7 @@
 //! parity check, ~23 minutes cold. `--quick` looks at what changed since the merge base with
 //! `origin/main` (or `--base REF`), committed or not, and runs:
 //!
-//! - fmt, layers, assets: always (seconds);
+//! - fmt, layers, assets, roots: always (seconds);
 //! - clippy on the whole workspace (check builds only; catches callers broken by an API change);
 //! - the tests of the changed packages only (not their dependents);
 //! - heif when `lightcraft-codecs` / `lightcraft-heif` changed;
@@ -39,6 +39,7 @@ const EMBEDDED: &[(&str, &[&str])] = &[
     ("assets/fonts/", &["lightcraft-engine", "lightcraft-ui-egui"]),
     ("contributors/", &["lightcraft-ui-egui"]),
     ("docs/whats-new.md", &["lightcraft-ui-egui"]),
+    ("packaging/linux/flatpak/", &["lightcraft-ui-egui"]),
     ("docs/raw/coverage-sweep.tsv", &["lightcraft-raw"]),
     ("docs/raf-corpus.sha256", &["lightcraft-raw"]),
     ("xtask/src/raw_samples.rs", &["lightcraft-raw"]),
